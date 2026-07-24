@@ -1,1 +1,2 @@
 plz insert research paper in this direcotry 
+make subdir of subject first
