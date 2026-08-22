@@ -1,0 +1,21 @@
+# Baseline DCP Experiment Configuration
+experiment:
+  name: "dcp_base"
+  description: "Baseline DCP state and QFT verification configuration"
+
+parameters:
+  N: 16
+  s: 5
+  m: 1
+  k: null
+  epsilon: 0.0
+  shots: 1000
+  seed: 42
+  problem_type: "dcp"
+  recovery_strategy: "brute_force"
+  truncation_mode: "msb"
+  backend: "statevector"
+
+output:
+  dir: "results/raw/dcp_base"
+  format: "parquet"
