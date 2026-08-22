@@ -1,0 +1,39 @@
+{
+  "config": {
+    "N": 16,
+    "s": 5,
+    "n": 4,
+    "m": 1,
+    "k": 4,
+    "epsilon": 0.0,
+    "shots": 100,
+    "seed": 42,
+    "problem_type": "dcp",
+    "recovery_strategy": "brute_force",
+    "truncation_mode": "msb",
+    "backend": "statevector",
+    "edcp_chi": null,
+    "mod_halving_iterations": 0
+  },
+  "statistics": {
+    "recovery_prob": 0.0,
+    "recovery_prob_ci": [
+      3.469446951953614e-18,
+      0.03699349820698568
+    ],
+    "bit_recovery_probs": [
+      0.05,
+      0.93,
+      0.21,
+      0.42
+    ],
+    "bit_advantages": [
+      -0.45,
+      0.43000000000000005,
+      -0.29000000000000004,
+      -0.08000000000000002
+    ],
+    "runtime_seconds": 0.26270360000035
+  },
+  "timestamp": "2026-08-22T01:37:33.404506"
+}
