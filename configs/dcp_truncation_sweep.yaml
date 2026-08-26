@@ -1,0 +1,33 @@
+# Core DCP Truncation Experiment Sweep Configuration
+experiment:
+  name: "dcp_truncation_core"
+  description: "Core Fourier bit truncation sweep across moduli N in {4, 8, 16, 32}"
+
+base_parameters:
+  m: 1
+  epsilon: 0.0
+  shots: 1000
+  seed: 42
+  problem_type: "dcp"
+  recovery_strategy: "brute_force"
+  truncation_mode: "msb"
+  backend: "statevector"
+
+sweep_grid:
+  - N: 4
+    s: 3
+    k_values: [1, 2]
+  - N: 8
+    s: 5
+    k_values: [1, 2, 3]
+  - N: 16
+    s: 11
+    k_values: [1, 2, 3, 4]
+  - N: 32
+    s: 19
+    k_values: [1, 2, 3, 4, 5]
+
+output:
+  dir: "results/raw/dcp_truncation_core"
+  file_prefix: "dcp_truncation_sweep"
+  format: "parquet"

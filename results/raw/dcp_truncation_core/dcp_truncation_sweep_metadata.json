@@ -1,0 +1,229 @@
+{
+  "experiment": {
+    "name": "dcp_truncation_core",
+    "description": "Core Fourier bit truncation sweep across moduli N in {4, 8, 16, 32}"
+  },
+  "base_parameters": {
+    "m": 1,
+    "epsilon": 0.0,
+    "shots": 1000,
+    "seed": 42,
+    "problem_type": "dcp",
+    "recovery_strategy": "brute_force",
+    "truncation_mode": "msb",
+    "backend": "statevector"
+  },
+  "sweep_grid": [
+    {
+      "N": 4,
+      "s": 3,
+      "k_values": [
+        1,
+        2
+      ]
+    },
+    {
+      "N": 8,
+      "s": 5,
+      "k_values": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "N": 16,
+      "s": 11,
+      "k_values": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "N": 32,
+      "s": 19,
+      "k_values": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "total_jobs": 14,
+  "total_runtime_seconds": 203.61851860000024,
+  "timestamp": "2026-08-22T03:17:51.664295",
+  "summary": [
+    {
+      "N": 4,
+      "n": 2,
+      "k": 1,
+      "s": 3,
+      "shots": 1000,
+      "recovery_prob": 0.176,
+      "mirror_recovery_prob": 0.373,
+      "ci_lower": 0.15364942465804565,
+      "ci_upper": 0.2008303148405941,
+      "runtime_sec": 1.7065189000004466
+    },
+    {
+      "N": 4,
+      "n": 2,
+      "k": 2,
+      "s": 3,
+      "shots": 1000,
+      "recovery_prob": 0.199,
+      "mirror_recovery_prob": 0.376,
+      "ci_lower": 0.175427205789421,
+      "ci_upper": 0.22487650281888322,
+      "runtime_sec": 4.986255199999505
+    },
+    {
+      "N": 8,
+      "n": 3,
+      "k": 1,
+      "s": 5,
+      "shots": 1000,
+      "recovery_prob": 0.078,
+      "mirror_recovery_prob": 0.151,
+      "ci_lower": 0.06294716759073615,
+      "ci_upper": 0.09628261657107237,
+      "runtime_sec": 13.76374240000041
+    },
+    {
+      "N": 8,
+      "n": 3,
+      "k": 2,
+      "s": 5,
+      "shots": 1000,
+      "recovery_prob": 0.0,
+      "mirror_recovery_prob": 0.0,
+      "ci_lower": 2.168404344971009e-19,
+      "ci_upper": 0.0038267584855551234,
+      "runtime_sec": 10.641081199999462
+    },
+    {
+      "N": 8,
+      "n": 3,
+      "k": 3,
+      "s": 5,
+      "shots": 1000,
+      "recovery_prob": 0.044,
+      "mirror_recovery_prob": 0.091,
+      "ci_lower": 0.0329382145884185,
+      "ci_upper": 0.058551789150407776,
+      "runtime_sec": 10.63952160000008
+    },
+    {
+      "N": 16,
+      "n": 4,
+      "k": 1,
+      "s": 11,
+      "shots": 1000,
+      "recovery_prob": 0.041,
+      "mirror_recovery_prob": 0.073,
+      "ci_lower": 0.030364971082098315,
+      "ci_upper": 0.0551479932076413,
+      "runtime_sec": 15.45667869999852
+    },
+    {
+      "N": 16,
+      "n": 4,
+      "k": 2,
+      "s": 11,
+      "shots": 1000,
+      "recovery_prob": 0.0,
+      "mirror_recovery_prob": 0.0,
+      "ci_lower": 2.168404344971009e-19,
+      "ci_upper": 0.0038267584855551234,
+      "runtime_sec": 15.23265580000043
+    },
+    {
+      "N": 16,
+      "n": 4,
+      "k": 3,
+      "s": 11,
+      "shots": 1000,
+      "recovery_prob": 0.05,
+      "mirror_recovery_prob": 0.104,
+      "ci_lower": 0.03813026239274882,
+      "ci_upper": 0.06531382024425081,
+      "runtime_sec": 14.975321500000064
+    },
+    {
+      "N": 16,
+      "n": 4,
+      "k": 4,
+      "s": 11,
+      "shots": 1000,
+      "recovery_prob": 0.01,
+      "mirror_recovery_prob": 0.02,
+      "ci_lower": 0.005440754445529249,
+      "ci_upper": 0.018309468870314774,
+      "runtime_sec": 14.40800710000076
+    },
+    {
+      "N": 32,
+      "n": 5,
+      "k": 1,
+      "s": 19,
+      "shots": 1000,
+      "recovery_prob": 0.018,
+      "mirror_recovery_prob": 0.035,
+      "ci_lower": 0.011415740009567788,
+      "ci_upper": 0.028273255170507345,
+      "runtime_sec": 21.46962100000019
+    },
+    {
+      "N": 32,
+      "n": 5,
+      "k": 2,
+      "s": 19,
+      "shots": 1000,
+      "recovery_prob": 0.0,
+      "mirror_recovery_prob": 0.0,
+      "ci_lower": 2.168404344971009e-19,
+      "ci_upper": 0.0038267584855551234,
+      "runtime_sec": 17.102798199999597
+    },
+    {
+      "N": 32,
+      "n": 5,
+      "k": 3,
+      "s": 19,
+      "shots": 1000,
+      "recovery_prob": 0.0,
+      "mirror_recovery_prob": 0.0,
+      "ci_lower": 2.168404344971009e-19,
+      "ci_upper": 0.0038267584855551234,
+      "runtime_sec": 20.53940220000004
+    },
+    {
+      "N": 32,
+      "n": 5,
+      "k": 4,
+      "s": 19,
+      "shots": 1000,
+      "recovery_prob": 0.0,
+      "mirror_recovery_prob": 0.0,
+      "ci_lower": 2.168404344971009e-19,
+      "ci_upper": 0.0038267584855551234,
+      "runtime_sec": 21.231444899998678
+    },
+    {
+      "N": 32,
+      "n": 5,
+      "k": 5,
+      "s": 19,
+      "shots": 1000,
+      "recovery_prob": 0.004,
+      "mirror_recovery_prob": 0.004,
+      "ci_lower": 0.0015565881404084308,
+      "ci_upper": 0.010239556277262253,
+      "runtime_sec": 20.322142999999414
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "num_configurations": 14,
+  "columns": [
+    "N",
+    "n",
+    "k",
+    "s",
+    "m",
+    "epsilon",
+    "truncation_mode",
+    "shots",
+    "recovery_prob",
+    "ci_lower",
+    "ci_upper",
+    "mean_bit_accuracy",
+    "bit_recovery_probs",
+    "bit_advantages",
+    "mi_truncated",
+    "mi_full",
+    "info_loss_ratio",
+    "mean_confidence"
+  ],
+  "moduli": [
+    4,
+    8,
+    16,
+    32
+  ]
+}

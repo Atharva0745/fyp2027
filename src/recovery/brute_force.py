@@ -81,7 +81,10 @@ def brute_force_recovery(
     posterior = {s: v / total for s, v in exp_vals.items()}
 
     max_prob = max(posterior.values())
-    candidates = [s for s, p in posterior.items() if np.isclose(p, max_prob, atol=1e-12)]
+    candidates = [s for s, p in posterior.items() if np.isclose(p, max_prob, atol=1e-9)]
+    # Random tie-breaking: when s and N-s are exactly tied (always true for single DCP sample),
+    # pick uniformly at random. mirror_correct in the orchestrator tracks whether we found
+    # s OR its indistinguishable mirror N-s.
     s_hat = int(rng.choice(candidates))
     confidence = posterior[s_hat]
 
