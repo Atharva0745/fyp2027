@@ -1,8 +1,24 @@
 # Project Context & Phase Implementation Log
 
 > **Project:** DCP/EDCP Quantum Information Analysis Framework  
-> **Last Updated:** 2026-08-22  
-> **Current Status:** Phase 3 Complete (Analysis, Statistics, and Visualisation)
+> **Last Updated:** 2026-09-28  
+> **Current Status:** Phase 3 Complete — Re-run with corrected sweep parameters (bayesian, m=8)
+
+## Environment
+
+| Item | Value |
+|------|-------|
+| Python | 3.12.13 (via `.venv` using `uv`) |
+| Qiskit | 2.5.2 |
+| qiskit-aer | 0.17.2 |
+| Venv path | `.venv/` (excluded from git via `.gitignore`) |
+| Run tests | `.venv\Scripts\python.exe -m pytest tests/ -v` |
+| Run sweep | `.venv\Scripts\python.exe scripts/run_sweep.py --config configs/dcp_truncation_sweep.yaml` |
+| Run plots | `.venv\Scripts\python.exe scripts/plot_results.py` |
+
+> **Note:** Python 3.14 is installed system-wide but is incompatible with Qiskit. Always use `.venv` for this project.
+
+---
 
 ---
 
@@ -25,7 +41,9 @@ Phase 2 establishes the end-to-end simulation and inference pipeline to address 
 1. Information Engine with quantum joint measurement sampling $(y, b)$ and bit truncation.
 2. Recovery Engine with brute-force, maximum-likelihood, Bayesian sequential updating, bitwise MAP inference, and phase matching.
 3. Orchestrator and persistence layer for Parquet/JSON data storage.
-4. Execution of the core truncation sweep (14 configurations, 14,000 trials).
+4. Execution of the core truncation sweep (14 configurations, 112,000 trials total: 1,000 shots × 8 samples).
+
+> **Sweep Config Update (2026-09-28):** The original sweep used `brute_force` with `m=1`, which hits the fundamental DCP sign ambiguity — s and N−s produce identical single-sample posterior likelihoods, capping exact recovery at ~50% and yielding sub-random results at partial truncation. The sweep was re-configured to `bayesian` with `m=8` independent observations per trial. Bayesian sequential updating over 8 samples allows the posterior to concentrate beyond the ambiguity floor.
 
 ---
 
@@ -85,38 +103,40 @@ Phase 3 transforms raw trial simulation datasets into rigorous information-theor
 | [`scripts/run_single.py`](file:///c:/FYP/fyp2027/scripts/run_single.py) | CLI Script | Single configuration experiment runner. |
 | [`scripts/run_sweep.py`](file:///c:/FYP/fyp2027/scripts/run_sweep.py) | CLI Script | Parameter sweep runner. |
 | [`scripts/plot_results.py`](file:///c:/FYP/fyp2027/scripts/plot_results.py) | CLI Script | Publication analysis and plot generator. |
-| [`tests/test_config.py`](file:///c:/FYP/fyp2027/tests/test_config.py) | Unit Tests | 7 passing tests. |
-| [`tests/test_modular_add.py`](file:///c:/FYP/fyp2027/tests/test_modular_add.py) | Unit Tests | 9 passing tests. |
-| [`tests/test_dcp_engine.py`](file:///c:/FYP/fyp2027/tests/test_dcp_engine.py) | Unit Tests | 8 passing tests. |
-| [`tests/test_qft_engine.py`](file:///c:/FYP/fyp2027/tests/test_qft_engine.py) | Unit Tests | 10 passing tests. |
-| [`tests/test_info_engine.py`](file:///c:/FYP/fyp2027/tests/test_info_engine.py) | Unit Tests | 5 passing tests. |
-| [`tests/test_recovery_engine.py`](file:///c:/FYP/fyp2027/tests/test_recovery_engine.py) | Unit Tests | 5 passing tests. |
-| [`tests/test_orchestrator.py`](file:///c:/FYP/fyp2027/tests/test_orchestrator.py) | Integration Tests | 2 passing tests. |
-| [`tests/test_mutual_information.py`](file:///c:/FYP/fyp2027/tests/test_mutual_information.py) | Unit Tests | 4 passing tests. |
-| [`tests/test_stats_engine.py`](file:///c:/FYP/fyp2027/tests/test_stats_engine.py) | Unit Tests | 2 passing tests. |
+| [`tests/test_config.py`](file:///d:/fyp/fyp2027/tests/test_config.py) | Unit Tests | 7 passing tests ✅ |
+| [`tests/test_modular_add.py`](file:///d:/fyp/fyp2027/tests/test_modular_add.py) | Unit Tests | 9 passing tests ✅ |
+| [`tests/test_dcp_engine.py`](file:///d:/fyp/fyp2027/tests/test_dcp_engine.py) | Unit Tests | 8 passing tests ✅ |
+| [`tests/test_qft_engine.py`](file:///d:/fyp/fyp2027/tests/test_qft_engine.py) | Unit Tests | 10 passing tests ✅ |
+| [`tests/test_info_engine.py`](file:///d:/fyp/fyp2027/tests/test_info_engine.py) | Unit Tests | 5 passing tests ✅ |
+| [`tests/test_recovery_engine.py`](file:///d:/fyp/fyp2027/tests/test_recovery_engine.py) | Unit Tests | 5 passing tests ✅ |
+| [`tests/test_orchestrator.py`](file:///d:/fyp/fyp2027/tests/test_orchestrator.py) | Integration Tests | 2 passing tests ✅ |
+| [`tests/test_mutual_information.py`](file:///d:/fyp/fyp2027/tests/test_mutual_information.py) | Unit Tests | 4 passing tests ✅ |
+| [`tests/test_stats_engine.py`](file:///d:/fyp/fyp2027/tests/test_stats_engine.py) | Unit Tests | 2 passing tests ✅ |
+
+> **52 / 52 tests passing** on Python 3.12.13 with Qiskit 2.5.2 (confirmed 2026-09-28).
 
 ---
 
 ### 3. Key Findings & Quantitative Summary Table
 
-The core research question — *how does Fourier information truncation affect secret recovery?* — is quantitatively characterized in the aggregated results table below:
+The core research question — *how does Fourier information truncation affect secret recovery?* — is quantitatively characterized in the aggregated results table below (using bayesian recovery with $m=8$ independent samples):
 
-| $N$ | $n$ | $k$ | $s$ | Shots | $P_{\text{success}}$ | 95% Wilson CI | $I(S; Y_k, B)$ (bits) | Info Loss Ratio | Mean Bit Accuracy |
-|:---:|:---:|:---:|:---:|:-----:|:--------------------:|:-------------:|:---------------------:|:---------------:|:-----------------:|
-| **4** | 2 | 1 | 3 | 1000 | 0.176 | [0.154, 0.201] | 0.2500 | 50.0% | 0.342 |
-| **4** | 2 | 2 | 3 | 1000 | 0.199 | [0.175, 0.225] | 0.5000 | **0.0%** | 0.435 |
-| **8** | 3 | 1 | 5 | 1000 | 0.078 | [0.063, 0.096] | 0.1250 | 73.7% | 0.442 |
-| **8** | 3 | 2 | 5 | 1000 | 0.000 | [0.000, 0.004] | 0.2277 | 52.0% | 0.367 |
-| **8** | 3 | 3 | 5 | 1000 | 0.044 | [0.033, 0.059] | 0.4748 | **0.0%** | 0.471 |
-| **16** | 4 | 1 | 11 | 1000 | 0.041 | [0.030, 0.055] | 0.0625 | 86.4% | 0.397 |
-| **16** | 4 | 2 | 11 | 1000 | 0.000 | [0.000, 0.004] | 0.1115 | 75.7% | 0.440 |
-| **16** | 4 | 3 | 11 | 1000 | 0.050 | [0.038, 0.065] | 0.2172 | 52.7% | 0.416 |
-| **16** | 4 | 4 | 11 | 1000 | 0.010 | [0.005, 0.018] | 0.4592 | **0.0%** | 0.369 |
-| **32** | 5 | 1 | 19 | 1000 | 0.018 | [0.011, 0.028] | 0.0312 | 93.1% | 0.455 |
-| **32** | 5 | 2 | 19 | 1000 | 0.000 | [0.000, 0.004] | 0.0554 | 87.7% | 0.504 |
-| **32** | 5 | 3 | 19 | 1000 | 0.000 | [0.000, 0.004] | 0.1067 | 76.3% | 0.481 |
-| **32** | 5 | 4 | 19 | 1000 | 0.000 | [0.000, 0.004] | 0.2120 | 53.0% | 0.441 |
-| **32** | 5 | 5 | 19 | 1000 | 0.004 | [0.002, 0.010] | 0.4510 | **0.0%** | 0.452 |
+| $N$ | $n$ | $k$ | $s$ | Shots | $P_{\text{success}}$ | $P_{\text{mirror\_correct}}$ | 95% Wilson CI (P_succ) | $I(S; Y_k, B)$ (bits) | Info Loss Ratio |
+|:---:|:---:|:---:|:---:|:-----:|:--------------------:|:----------------------------:|:----------------------:|:---------------------:|:---------------:|
+| **4** | 2 | 1 | 3 | 1000 | 0.320 | 0.674 | [0.291, 0.350] | 0.2500 | 50.0% |
+| **4** | 2 | 2 | 3 | 1000 | 0.533 | 0.990 | [0.502, 0.564] | 0.5000 | **0.0%** |
+| **8** | 3 | 1 | 5 | 1000 | 0.160 | 0.311 | [0.139, 0.184] | 0.1250 | 73.7% |
+| **8** | 3 | 2 | 5 | 1000 | 0.253 | 0.529 | [0.227, 0.281] | 0.2277 | 52.0% |
+| **8** | 3 | 3 | 5 | 1000 | 0.469 | 0.911 | [0.438, 0.500] | 0.4748 | **0.0%** |
+| **16** | 4 | 1 | 11 | 1000 | 0.067 | 0.127 | [0.053, 0.084] | 0.0625 | 86.4% |
+| **16** | 4 | 2 | 11 | 1000 | 0.091 | 0.182 | [0.075, 0.110] | 0.1115 | 75.7% |
+| **16** | 4 | 3 | 11 | 1000 | 0.232 | 0.490 | [0.207, 0.259] | 0.2172 | 52.7% |
+| **16** | 4 | 4 | 11 | 1000 | 0.424 | 0.804 | [0.394, 0.455] | 0.4592 | **0.0%** |
+| **32** | 5 | 1 | 19 | 1000 | 0.032 | 0.055 | [0.023, 0.045] | 0.0312 | 93.1% |
+| **32** | 5 | 2 | 19 | 1000 | 0.011 | 0.025 | [0.006, 0.020] | 0.0554 | 87.7% |
+| **32** | 5 | 3 | 19 | 1000 | 0.028 | 0.057 | [0.019, 0.040] | 0.1067 | 76.3% |
+| **32** | 5 | 4 | 19 | 1000 | 0.061 | 0.121 | [0.048, 0.078] | 0.2120 | 53.0% |
+| **32** | 5 | 5 | 19 | 1000 | 0.358 | 0.697 | [0.329, 0.388] | 0.4510 | **0.0%** |
 
 ---
 

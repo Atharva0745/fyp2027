@@ -4,12 +4,12 @@
     "description": "Core Fourier bit truncation sweep across moduli N in {4, 8, 16, 32}"
   },
   "base_parameters": {
-    "m": 1,
+    "m": 8,
     "epsilon": 0.0,
     "shots": 1000,
     "seed": 42,
     "problem_type": "dcp",
-    "recovery_strategy": "brute_force",
+    "recovery_strategy": "bayesian",
     "truncation_mode": "msb",
     "backend": "statevector"
   },
@@ -54,8 +54,8 @@
     }
   ],
   "total_jobs": 14,
-  "total_runtime_seconds": 203.61851860000024,
-  "timestamp": "2026-08-22T03:17:51.664295",
+  "total_runtime_seconds": 313.27622669999255,
+  "timestamp": "2026-09-28T15:42:46.550034",
   "summary": [
     {
       "N": 4,
@@ -63,11 +63,11 @@
       "k": 1,
       "s": 3,
       "shots": 1000,
-      "recovery_prob": 0.176,
-      "mirror_recovery_prob": 0.373,
-      "ci_lower": 0.15364942465804565,
-      "ci_upper": 0.2008303148405941,
-      "runtime_sec": 1.7065189000004466
+      "recovery_prob": 0.32,
+      "mirror_recovery_prob": 0.674,
+      "ci_lower": 0.29182400898144156,
+      "ci_upper": 0.3495536240733583,
+      "runtime_sec": 13.245403200009605
     },
     {
       "N": 4,
@@ -75,11 +75,11 @@
       "k": 2,
       "s": 3,
       "shots": 1000,
-      "recovery_prob": 0.199,
-      "mirror_recovery_prob": 0.376,
-      "ci_lower": 0.175427205789421,
-      "ci_upper": 0.22487650281888322,
-      "runtime_sec": 4.986255199999505
+      "recovery_prob": 0.533,
+      "mirror_recovery_prob": 0.99,
+      "ci_lower": 0.5020104989134991,
+      "ci_upper": 0.5637369350264544,
+      "runtime_sec": 14.718550099991262
     },
     {
       "N": 8,
@@ -87,11 +87,11 @@
       "k": 1,
       "s": 5,
       "shots": 1000,
-      "recovery_prob": 0.078,
-      "mirror_recovery_prob": 0.151,
-      "ci_lower": 0.06294716759073615,
-      "ci_upper": 0.09628261657107237,
-      "runtime_sec": 13.76374240000041
+      "recovery_prob": 0.16,
+      "mirror_recovery_prob": 0.311,
+      "ci_lower": 0.13858526208349012,
+      "ci_upper": 0.1840169336866874,
+      "runtime_sec": 17.14263230000506
     },
     {
       "N": 8,
@@ -99,11 +99,11 @@
       "k": 2,
       "s": 5,
       "shots": 1000,
-      "recovery_prob": 0.0,
-      "mirror_recovery_prob": 0.0,
-      "ci_lower": 2.168404344971009e-19,
-      "ci_upper": 0.0038267584855551234,
-      "runtime_sec": 10.641081199999462
+      "recovery_prob": 0.253,
+      "mirror_recovery_prob": 0.529,
+      "ci_lower": 0.22703579958556788,
+      "ci_upper": 0.28085461910629633,
+      "runtime_sec": 16.571739800012438
     },
     {
       "N": 8,
@@ -111,11 +111,11 @@
       "k": 3,
       "s": 5,
       "shots": 1000,
-      "recovery_prob": 0.044,
-      "mirror_recovery_prob": 0.091,
-      "ci_lower": 0.0329382145884185,
-      "ci_upper": 0.058551789150407776,
-      "runtime_sec": 10.63952160000008
+      "recovery_prob": 0.469,
+      "mirror_recovery_prob": 0.911,
+      "ci_lower": 0.438247507417386,
+      "ci_upper": 0.49998975160871834,
+      "runtime_sec": 17.554242800018983
     },
     {
       "N": 16,
@@ -123,11 +123,11 @@
       "k": 1,
       "s": 11,
       "shots": 1000,
-      "recovery_prob": 0.041,
-      "mirror_recovery_prob": 0.073,
-      "ci_lower": 0.030364971082098315,
-      "ci_upper": 0.0551479932076413,
-      "runtime_sec": 15.45667869999852
+      "recovery_prob": 0.067,
+      "mirror_recovery_prob": 0.127,
+      "ci_lower": 0.05310191960662385,
+      "ci_upper": 0.08421205324186688,
+      "runtime_sec": 22.187358900002437
     },
     {
       "N": 16,
@@ -135,11 +135,11 @@
       "k": 2,
       "s": 11,
       "shots": 1000,
-      "recovery_prob": 0.0,
-      "mirror_recovery_prob": 0.0,
-      "ci_lower": 2.168404344971009e-19,
-      "ci_upper": 0.0038267584855551234,
-      "runtime_sec": 15.23265580000043
+      "recovery_prob": 0.091,
+      "mirror_recovery_prob": 0.182,
+      "ci_lower": 0.07470470437164412,
+      "ci_upper": 0.11042558406953998,
+      "runtime_sec": 21.136036200012313
     },
     {
       "N": 16,
@@ -147,11 +147,11 @@
       "k": 3,
       "s": 11,
       "shots": 1000,
-      "recovery_prob": 0.05,
-      "mirror_recovery_prob": 0.104,
-      "ci_lower": 0.03813026239274882,
-      "ci_upper": 0.06531382024425081,
-      "runtime_sec": 14.975321500000064
+      "recovery_prob": 0.232,
+      "mirror_recovery_prob": 0.49,
+      "ci_lower": 0.20689343939858929,
+      "ci_upper": 0.2591577031496683,
+      "runtime_sec": 21.755754499987233
     },
     {
       "N": 16,
@@ -159,11 +159,11 @@
       "k": 4,
       "s": 11,
       "shots": 1000,
-      "recovery_prob": 0.01,
-      "mirror_recovery_prob": 0.02,
-      "ci_lower": 0.005440754445529249,
-      "ci_upper": 0.018309468870314774,
-      "runtime_sec": 14.40800710000076
+      "recovery_prob": 0.424,
+      "mirror_recovery_prob": 0.804,
+      "ci_lower": 0.3937184466169774,
+      "ci_upper": 0.4548632206728269,
+      "runtime_sec": 20.759023499995237
     },
     {
       "N": 32,
@@ -171,11 +171,11 @@
       "k": 1,
       "s": 19,
       "shots": 1000,
-      "recovery_prob": 0.018,
-      "mirror_recovery_prob": 0.035,
-      "ci_lower": 0.011415740009567788,
-      "ci_upper": 0.028273255170507345,
-      "runtime_sec": 21.46962100000019
+      "recovery_prob": 0.032,
+      "mirror_recovery_prob": 0.055,
+      "ci_lower": 0.022757107858710962,
+      "ci_upper": 0.04482473808376865,
+      "runtime_sec": 30.52088540000841
     },
     {
       "N": 32,
@@ -183,11 +183,11 @@
       "k": 2,
       "s": 19,
       "shots": 1000,
-      "recovery_prob": 0.0,
-      "mirror_recovery_prob": 0.0,
-      "ci_lower": 2.168404344971009e-19,
-      "ci_upper": 0.0038267584855551234,
-      "runtime_sec": 17.102798199999597
+      "recovery_prob": 0.011,
+      "mirror_recovery_prob": 0.025,
+      "ci_lower": 0.006153174098086639,
+      "ci_upper": 0.019589395700786272,
+      "runtime_sec": 29.762701800005743
     },
     {
       "N": 32,
@@ -195,11 +195,11 @@
       "k": 3,
       "s": 19,
       "shots": 1000,
-      "recovery_prob": 0.0,
-      "mirror_recovery_prob": 0.0,
-      "ci_lower": 2.168404344971009e-19,
-      "ci_upper": 0.0038267584855551234,
-      "runtime_sec": 20.53940220000004
+      "recovery_prob": 0.028,
+      "mirror_recovery_prob": 0.057,
+      "ci_lower": 0.019442276812770925,
+      "ci_upper": 0.04017018319759311,
+      "runtime_sec": 28.827427499985788
     },
     {
       "N": 32,
@@ -207,11 +207,11 @@
       "k": 4,
       "s": 19,
       "shots": 1000,
-      "recovery_prob": 0.0,
-      "mirror_recovery_prob": 0.0,
-      "ci_lower": 2.168404344971009e-19,
-      "ci_upper": 0.0038267584855551234,
-      "runtime_sec": 21.231444899998678
+      "recovery_prob": 0.061,
+      "mirror_recovery_prob": 0.121,
+      "ci_lower": 0.0477797751260337,
+      "ci_upper": 0.07758011882428367,
+      "runtime_sec": 28.480696199985687
     },
     {
       "N": 32,
@@ -219,11 +219,11 @@
       "k": 5,
       "s": 19,
       "shots": 1000,
-      "recovery_prob": 0.004,
-      "mirror_recovery_prob": 0.004,
-      "ci_lower": 0.0015565881404084308,
-      "ci_upper": 0.010239556277262253,
-      "runtime_sec": 20.322142999999414
+      "recovery_prob": 0.358,
+      "mirror_recovery_prob": 0.697,
+      "ci_lower": 0.328881603627749,
+      "ci_upper": 0.3882051957821486,
+      "runtime_sec": 29.590030100021977
     }
   ]
 }
