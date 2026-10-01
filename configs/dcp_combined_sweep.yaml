@@ -1,0 +1,41 @@
+# Phase 5.3 — Combined Parameter Sweep Configuration
+# Simultaneously varies N, k, m, and epsilon to map the full parameter space.
+experiment:
+  name: "dcp_combined"
+  description: "Phase 5.3: Comprehensive sweep varying N, k, m, and epsilon simultaneously"
+
+base_parameters:
+  shots: 300
+  seed: 42
+  problem_type: "dcp"
+  recovery_strategy: "bayesian"
+  truncation_mode: "msb"
+  backend: "statevector"
+
+# For each (N, s) we vary k, m, and epsilon
+sweep_grid:
+  # N=4 (n=2): k in {1, 2}, m in {1, 4}, epsilon in {0, 0.05, 0.1, 0.2}
+  - N: 4
+    s: 3
+    k_values: [1, 2]
+    m_values: [1, 4]
+    epsilon_values: [0.0, 0.05, 0.1, 0.2]
+
+  # N=8 (n=3): k in {1, 2, 3}, m in {1, 4}, epsilon in {0, 0.05, 0.1, 0.2}
+  - N: 8
+    s: 5
+    k_values: [1, 2, 3]
+    m_values: [1, 4]
+    epsilon_values: [0.0, 0.05, 0.1, 0.2]
+
+  # N=16 (n=4): k in {1, 2, 3, 4}, m in {1, 4}, epsilon in {0, 0.05, 0.1, 0.2}
+  - N: 16
+    s: 11
+    k_values: [1, 2, 3, 4]
+    m_values: [1, 4]
+    epsilon_values: [0.0, 0.05, 0.1, 0.2]
+
+output:
+  dir: "results/raw/dcp_combined"
+  file_prefix: "dcp_combined_sweep"
+  format: "parquet"

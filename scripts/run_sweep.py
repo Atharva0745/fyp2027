@@ -77,19 +77,23 @@ def main() -> None:
     for item in sweep_grid:
         N = item["N"]
         s = item["s"]
-        k_values = item["k_values"]
+        k_values = item.get("k_values", [None])
+        m_values = item.get("m_values", [base_params.get("m", 1)])
+        epsilon_values = item.get("epsilon_values", [base_params.get("epsilon", 0.0)])
         for k in k_values:
-            jobs.append((N, s, k))
+            for m in m_values:
+                for eps in epsilon_values:
+                    jobs.append((N, s, k, m, eps))
 
     start_time = time.perf_counter()
 
-    for N, s, k in tqdm(jobs, desc="Sweep Progress"):
+    for N, s, k, m, epsilon in tqdm(jobs, desc="Sweep Progress"):
         cfg = ExperimentConfig(
             N=N,
             s=s,
             k=k,
-            m=base_params.get("m", 1),
-            epsilon=base_params.get("epsilon", 0.0),
+            m=m,
+            epsilon=epsilon,
             shots=base_params.get("shots", 1000),
             seed=base_params.get("seed", 42),
             problem_type=base_params.get("problem_type", "dcp"),
@@ -107,12 +111,16 @@ def main() -> None:
             "N": N,
             "n": cfg.n,
             "k": k,
+            "m": m,
+            "epsilon": epsilon,
             "s": s,
             "shots": cfg.shots,
             "recovery_prob": stats.recovery_prob,
             "mirror_recovery_prob": stats.mirror_recovery_prob,
             "ci_lower": stats.recovery_prob_ci[0],
             "ci_upper": stats.recovery_prob_ci[1],
+            "circuit_depth": stats.circuit_depth,
+            "num_qubits": stats.num_qubits,
             "runtime_sec": stats.runtime_seconds,
         })
 

@@ -1,8 +1,8 @@
 # Project Context & Phase Implementation Log
 
 > **Project:** DCP/EDCP Quantum Information Analysis Framework  
-> **Last Updated:** 2026-09-28  
-> **Current Status:** Phase 3 Complete — Re-run with corrected sweep parameters (bayesian, m=8)
+> **Last Updated:** 2026-10-01  
+> **Current Status:** Phase 6 Complete — All phases implemented including EDCP and Modulus-Halving.
 
 ## Environment
 
@@ -124,7 +124,9 @@ The core research question — *how does Fourier information truncation affect s
 | $N$ | $n$ | $k$ | $s$ | Shots | $P_{\text{success}}$ | $P_{\text{mirror\_correct}}$ | 95% Wilson CI (P_succ) | $I(S; Y_k, B)$ (bits) | Info Loss Ratio |
 |:---:|:---:|:---:|:---:|:-----:|:--------------------:|:----------------------------:|:----------------------:|:---------------------:|:---------------:|
 | **4** | 2 | 1 | 3 | 1000 | 0.320 | 0.674 | [0.291, 0.350] | 0.2500 | 50.0% |
-| **4** | 2 | 2 | 3 | 1000 | 0.533 | 0.990 | [0.502, 0.564] | 0.5000 | **0.0%** |
+| **4** | 2 | 2 | 3 | 1000 | 0.533 | 0.990 | [0.502, 0.
+
+564] | 0.5000 | **0.0%** |
 | **8** | 3 | 1 | 5 | 1000 | 0.160 | 0.311 | [0.139, 0.184] | 0.1250 | 73.7% |
 | **8** | 3 | 2 | 5 | 1000 | 0.253 | 0.529 | [0.227, 0.281] | 0.2277 | 52.0% |
 | **8** | 3 | 3 | 5 | 1000 | 0.469 | 0.911 | [0.438, 0.500] | 0.4748 | **0.0%** |
@@ -140,6 +142,33 @@ The core research question — *how does Fourier information truncation affect s
 
 ---
 
+### Phase 4: Sample Complexity
+**Status:** ✅ Complete
+- Extended `bayesian_recovery` to process multiple independent samples ($m$) sequentially.
+- Created `dcp_sample_complexity.yaml` configuration to sweep $m \in \{1, 2, 4, 8, 16\}$.
+- Executed the full Phase 4 sweep (45 conditions, 22,500 trials) and verified that higher sample counts effectively compensate for Fourier truncation (e.g., $P_{\text{success}}$ steadily increases towards 1.0 as $m$ increases, even for small $k$).
+- Created `plot_sample_complexity.py` to visualise recovery probability vs $m$ curves.
+
+---
+
+### Phase 5: Additional Modulus Scaling & Parameter Sweeps
+**Status:** ✅ Complete
+- Implemented and executed noise robustness sweeps (`epsilon` variation) across different $(N, k)$ combinations.
+- Scaled modulus up to $N=64$ and measured scaling properties including runtime and circuit depth.
+- Conducted combined parameter sweeps over $(N, k, m, \epsilon)$ and developed dedicated 4D heatmaps and dashboards for multidimensional analysis.
+- Created `run_phase5.py` and `plot_combined_sweep.py` to automate these experiments and generate corresponding deliverables in `results/raw/dcp_noise/`, `results/figures/dcp_scaling/`, and `results/figures/dcp_heatmaps/`.
+
+---
+
+### Phase 6: EDCP and Modulus-Halving Pipeline
+**Status:** ✅ Complete
+- Generalised the engine and circuits (`edcp_engine.py`, `edcp_circuit.py`) to construct generic Error Distribution over Conjugate Phase (EDCP) states, supporting arbitrary bounded error distributions like 4-term LWE-like $\chi$.
+- Established that DCP is accurately handled as a special case within the new framework (2-term $\chi$ with equal probabilities).
+- Programmed a toy implementation of Bai's modulus halving procedure (`mod_halving_engine.py`) demonstrating structural reduction $N \rightarrow N/2$ given parity assumptions.
+- Orchestrated comparative testing between DCP and EDCP setups, highlighting how truncation strategies behave relative to the underlying error model structure, generating comparison plots (`dcp_vs_edcp_N*.png`).
+
+---
+
 ### 4. Generated Artifacts
 - **Aggregated Datasets**:
   - `results/aggregated/dcp_core_summary.parquet`
@@ -152,3 +181,7 @@ The core research question — *how does Fourier information truncation affect s
   - `results/figures/dcp_core/information_loss_ratio.png`
   - `results/figures/dcp_core/bit_recovery_heatmap_N*.png`
   - `results/figures/dcp_core/sample_posterior_N16.png`
+  - `results/figures/dcp_sample_complexity/`
+  - `results/figures/dcp_heatmaps/`
+  - `results/figures/dcp_scaling/`
+  - `results/figures/edcp_comparison/dcp_vs_edcp_N*.png`

@@ -18,6 +18,12 @@ from src.engines.qft_engine import QFTEngine, QFTResult
 from src.engines.recovery_engine import RecoveryEngine, RecoveryResult
 from src.utils.math_utils import wilson_score_interval
 from src.utils.serialization import save_experiment_result
+from src.verification import VerificationReport, build_verification_report
+
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.engines.edcp_engine import EDCPState
 
 
 @dataclass
@@ -42,12 +48,13 @@ class ExperimentResult:
     """Dataclass holding single experiment run results and telemetry."""
 
     config: ExperimentConfig
-    dcp_state: DCPState | None
+    dcp_state: DCPState | EDCPState | None
     qft_result: QFTResult | None
     info_result: InformationResult | None
     recovery_result: RecoveryResult | None
     statistics: StatisticsResult | None
-    timestamp: str
+    verification: VerificationReport | None = None
+    timestamp: str = ""
 
 
 class Orchestrator:
@@ -82,7 +89,9 @@ class Orchestrator:
 
         trials: list[dict[str, Any]] = []
 
-        last_dcp_state: DCPState | None = None
+        from src.engines.edcp_engine import EDCPEngine, EDCPState, get_standard_chi
+
+        last_dcp_state: DCPState | EDCPState | None = None
         last_qft_res: QFTResult | None = None
         last_info_res: InformationResult | None = None
         last_rec_res: RecoveryResult | None = None
@@ -90,14 +99,22 @@ class Orchestrator:
         circuit_depth = 0
         num_qubits = n + 1
 
+        is_edcp = config.problem_type == "edcp"
+        edcp_engine = EDCPEngine() if is_edcp else None
+        chi = (config.edcp_chi if config.edcp_chi else get_standard_chi("2-term")) if is_edcp else None
+
         for trial_idx in range(shots):
             # For m samples, generate independent offsets x_i
             offsets = [int(rng.integers(0, N)) for _ in range(m)]
             obs_list: list[InformationResult] = []
 
             for x_i in offsets:
-                dcp_state = self.dcp_engine.create_state(N=N, s=s, x=x_i)
-                qft_res = self.qft_engine.transform(dcp_state)
+                if is_edcp and edcp_engine is not None and chi is not None:
+                    state = edcp_engine.create_state(N=N, s=s, x=x_i, chi=chi)
+                else:
+                    state = self.dcp_engine.create_state(N=N, s=s, x=x_i)
+                    
+                qft_res = self.qft_engine.transform(state)
                 info_res = info_engine.process(
                     qft_result=qft_res,
                     k=config.k,
@@ -108,10 +125,10 @@ class Orchestrator:
                 obs_list.append(info_res)
 
                 if trial_idx == 0:
-                    last_dcp_state = dcp_state
+                    last_dcp_state = state
                     last_qft_res = qft_res
                     last_info_res = info_res
-                    circuit_depth = dcp_state.circuit.depth()
+                    circuit_depth = state.circuit.depth()
 
             rec_res = recovery_engine.recover(
                 observations=obs_list,
@@ -135,8 +152,8 @@ class Orchestrator:
                 "k": k,
                 "s_true": s,
                 "s_hat": rec_res.s_hat,
-                "correct": bool(rec_res.correct),
-                "mirror_correct": bool(rec_res.mirror_correct),
+                "correct": rec_res.correct,
+                "mirror_correct": rec_res.mirror_correct,
                 "confidence": float(rec_res.confidence),
                 "m": m,
                 "epsilon": config.epsilon,
@@ -146,7 +163,7 @@ class Orchestrator:
             }
 
             for bit_i, is_bit_corr in enumerate(rec_res.bit_correct):
-                trial_record[f"bit_correct_{bit_i}"] = bool(is_bit_corr)
+                trial_record[f"bit_correct_{bit_i}"] = is_bit_corr
 
             trials.append(trial_record)
 
@@ -184,6 +201,27 @@ class Orchestrator:
             raw_data=raw_df,
         )
 
+        label_values = []
+        if last_info_res is not None:
+            label_values = [
+                int(last_info_res.Y_truncated),
+            ]
+        if trials:
+            label_values = [
+                int(trial["s_hat"]) if "s_hat" in trial else 0 for trial in trials
+            ]
+
+        verification_report = build_verification_report(
+            qft_distribution=list(last_qft_res.fourier_distribution.values()) if last_qft_res is not None else None,
+            labels=label_values,
+            amplitudes_h0=[complex(v) for v in (last_qft_res.phases.values() if last_qft_res is not None else [])],
+            amplitudes_h1=[complex(v) for v in (last_qft_res.phases.values() if last_qft_res is not None else [])],
+            branch_h0=[float(x) for x in (last_qft_res.fourier_distribution.values() if last_qft_res is not None else [])],
+            branch_h1=[float(x) for x in (last_qft_res.fourier_distribution.values() if last_qft_res is not None else [])],
+            prob_a=[float(rec_prob)],
+            prob_b=[float(1.0 - rec_prob)] if rec_prob < 1.0 else [0.0, 1.0],
+        )
+
         return ExperimentResult(
             config=config,
             dcp_state=last_dcp_state,
@@ -191,6 +229,7 @@ class Orchestrator:
             info_result=last_info_res,
             recovery_result=last_rec_res,
             statistics=stats_res,
+            verification=verification_report,
             timestamp=datetime.now().isoformat(),
         )
 
