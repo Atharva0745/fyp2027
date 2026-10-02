@@ -1,0 +1,32 @@
+# Phase 5.1 — Noise Robustness Sweep Configuration
+experiment:
+  name: "dcp_noise"
+  description: "Phase 5.1 sweep: recovery vs. bit-flip noise epsilon for varying N, k"
+
+base_parameters:
+  m: 4
+  shots: 500
+  seed: 42
+  problem_type: "dcp"
+  recovery_strategy: "bayesian"
+  truncation_mode: "msb"
+  backend: "statevector"
+
+sweep_grid:
+  - N: 4
+    s: 3
+    k_values: [1, 2]
+    epsilon_values: [0.0, 0.05, 0.1, 0.15, 0.2]
+  - N: 8
+    s: 5
+    k_values: [2, 3]
+    epsilon_values: [0.0, 0.05, 0.1, 0.15, 0.2]
+  - N: 16
+    s: 11
+    k_values: [2, 3, 4]
+    epsilon_values: [0.0, 0.05, 0.1, 0.15, 0.2]
+
+output:
+  dir: "results/raw/dcp_noise"
+  file_prefix: "dcp_noise_sweep"
+  format: "parquet"
