@@ -29,3 +29,9 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-v"
+[tool.pyright]
+extraPaths = ["."]
+
+[tool.pyrefly]
+search-path = ["."]
+

@@ -4,12 +4,12 @@ experiment:
   description: "Core Fourier bit truncation sweep across moduli N in {4, 8, 16, 32}"
 
 base_parameters:
-  m: 1
+  m: 8
   epsilon: 0.0
   shots: 1000
   seed: 42
   problem_type: "dcp"
-  recovery_strategy: "brute_force"
+  recovery_strategy: "bayesian"
   truncation_mode: "msb"
   backend: "statevector"
 

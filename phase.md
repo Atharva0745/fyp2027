@@ -328,27 +328,27 @@ Add two supporting dimensions: noise robustness and modulus scaling. These broad
 ### Tasks
 
 #### 5.1 Noise Robustness Sweep
-- [ ] Create noise sweep config: N \u2208 {4, 8, 16}, k \u2208 {2, ..., n}, m=1, epsilon \u2208 {0, 0.05, 0.1, 0.15, 0.2}, shots=500
-- [ ] Run noise sweep
-- [ ] Implement plot_recovery_vs_noise (P_success vs. epsilon for each (N, k))
-- [ ] Analyse: at what noise level does recovery collapse to random?
-- [ ] Analyse: is there an interaction between noise and truncation? (Are truncated observations more or less noise-sensitive?)
-- [ ] **Milestone:** Noise-robustness curves generated and analysed
+- [x] Create noise sweep config: N \u2208 {4, 8, 16}, k \u2208 {2, ..., n}, m=1, epsilon \u2208 {0, 0.05, 0.1, 0.15, 0.2}, shots=500
+- [x] Run noise sweep
+- [x] Implement plot_recovery_vs_noise (P_success vs. epsilon for each (N, k))
+- [x] Analyse: at what noise level does recovery collapse to random?
+- [x] Analyse: is there an interaction between noise and truncation? (Are truncated observations more or less noise-sensitive?)
+- [x] **Milestone:** Noise-robustness curves generated and analysed
 
 #### 5.2 Modulus Scaling
-- [ ] Run core truncation experiment with N=64 (n=6 qubits)
-- [ ] Measure: circuit depth, number of gates, statevector size, runtime per trial
-- [ ] Run for N=4, 8, 16, 32, 64 with k=n (full info) as a scaling baseline
-- [ ] Create scaling table: N, n, qubits, circuit_depth, gates, runtime_ms, memory_bytes
-- [ ] Implement plot_scaling (log-log plots of runtime and circuit depth vs. N)
-- [ ] **Milestone:** Scaling measurements complete up to N=64
+- [x] Run core truncation experiment with N=64 (n=6 qubits)
+- [x] Measure: circuit depth, number of gates, statevector size, runtime per trial
+- [x] Run for N=4, 8, 16, 32, 64 with k=n (full info) as a scaling baseline
+- [x] Create scaling table: N, n, qubits, circuit_depth, gates, runtime_ms, memory_bytes
+- [x] Implement plot_scaling (log-log plots of runtime and circuit depth vs. N)
+- [x] **Milestone:** Scaling measurements complete up to N=64
 
 #### 5.3 Combined Parameter Sweep
-- [ ] Create a comprehensive sweep config varying N, k, m, and epsilon simultaneously
-- [ ] Run the full sweep (estimated ~25 minutes for full parameter space)
-- [ ] Generate heatmap: P_success as a function of (k, epsilon) for fixed N and m
-- [ ] Generate heatmap: P_success as a function of (k, m) for fixed N and epsilon
-- [ ] **Milestone:** Full parameter-space characterisation
+- [x] Create a comprehensive sweep config varying N, k, m, and epsilon simultaneously
+- [x] Run the full sweep (estimated ~25 minutes for full parameter space)
+- [x] Generate heatmap: P_success as a function of (k, epsilon) for fixed N and m
+- [x] Generate heatmap: P_success as a function of (k, m) for fixed N and epsilon
+- [x] **Milestone:** Full parameter-space characterisation
 
 ### Deliverables
 
@@ -361,9 +361,9 @@ Add two supporting dimensions: noise robustness and modulus scaling. These broad
 
 ### Exit Criteria
 
-- [ ] Noise curves show monotonic degradation of recovery with increasing epsilon
-- [ ] Scaling measurements are consistent with theoretical expectations
-- [ ] N=64 experiments complete without memory issues
+- [x] Noise curves show monotonic degradation of recovery with increasing epsilon
+- [x] Scaling measurements are consistent with theoretical expectations
+- [x] N=64 experiments complete without memory issues
 
 ---
 
@@ -384,27 +384,27 @@ Extend the framework to EDCP and implement a toy-scale version of Bai et al.'s m
 ### Tasks
 
 #### 6.1 EDCP State Construction
-- [ ] Implement EDCP Engine (src/engines/edcp_engine.py)
-- [ ] Implement EDCP circuit construction (src/circuits/edcp_circuit.py)
-- [ ] Define standard EDCP chi configurations (2-term, 4-term, LWE-like)
-- [ ] Verify: DCP is a special case of EDCP (2-term with equal weights)
-- [ ] Test EDCP state correctness for small instances
-- [ ] **Milestone:** EDCP engine produces correct states
+- [x] Implement EDCP Engine (src/engines/edcp_engine.py)
+- [x] Implement EDCP circuit construction (src/circuits/edcp_circuit.py)
+- [x] Define standard EDCP chi configurations (2-term, 4-term, LWE-like)
+- [x] Verify: DCP is a special case of EDCP (2-term with equal weights)
+- [x] Test EDCP state correctness for small instances
+- [x] **Milestone:** EDCP engine produces correct states
 
 #### 6.2 Toy Bai-Style Modulus Halving
-- [ ] Implement modulus-halving engine (src/engines/mod_halving_engine.py)
-- [ ] Implement single iteration: EDCP \u2192 QFT \u2192 Fourier labels \u2192 equations \u2192 halve N
-- [ ] Implement multi-iteration loop with state tracking
-- [ ] Test with known small instances where the expected outcome is verifiable
-- [ ] **Milestone:** Modulus halving works correctly for toy parameters
+- [x] Implement modulus-halving engine (src/engines/mod_halving_engine.py)
+- [x] Implement single iteration: EDCP -> QFT -> Fourier labels -> equations -> halve N
+- [x] Implement multi-iteration loop with state tracking
+- [x] Test with known small instances where the expected outcome is verifiable
+- [x] **Milestone:** Modulus halving works correctly for toy parameters
 
 #### 6.3 DCP vs. EDCP Comparison
-- [ ] Run truncation experiments for EDCP instances with the same N
-- [ ] Compare: I(S;Y_k) for DCP vs. EDCP at the same N and k
-- [ ] Compare: P_success for DCP vs. EDCP
-- [ ] Analyse: does EDCP's richer structure provide more information per Fourier label?
-- [ ] Implement plot_dcp_vs_edcp comparison figure
-- [ ] **Milestone:** DCP vs. EDCP comparison complete
+- [x] Run truncation experiments for EDCP instances with the same N
+- [x] Compare: I(S;Y_k) for DCP vs. EDCP at the same N and k
+- [x] Compare: P_success for DCP vs. EDCP
+- [x] Analyse: does EDCP's richer structure provide more information per Fourier label?
+- [x] Implement plot_dcp_vs_edcp comparison figure
+- [x] **Milestone:** DCP vs. EDCP comparison complete
 
 ### Deliverables
 
@@ -417,9 +417,9 @@ Extend the framework to EDCP and implement a toy-scale version of Bai et al.'s m
 
 ### Exit Criteria
 
-- [ ] EDCP state verification passes for tested instances
-- [ ] Modulus halving produces correct modulus reduction
-- [ ] DCP vs. EDCP comparison plots are generated
+- [x] EDCP state verification passes for tested instances
+- [x] Modulus halving produces correct modulus reduction
+- [x] DCP vs. EDCP comparison plots are generated
 
 ---
 

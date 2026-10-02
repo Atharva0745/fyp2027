@@ -7,6 +7,9 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 from src.circuits.qft_circuit import apply_qft_to_register
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.engines.edcp_engine import EDCPState
 from src.engines.dcp_engine import DCPState
 
 
@@ -27,12 +30,12 @@ def extract_fourier_info(
     N: int,
     circuit: QuantumCircuit | None = None,
 ) -> QFTResult:
-    """Extract the Fourier label distribution and secret-dependent phases
+    r"""Extract the Fourier label distribution and secret-dependent phases
     from the post-QFT statevector.
 
-    The statevector has 2^(n+1) amplitudes indexed as |flag, data>.
+    The statevector has 2^(n+m) amplitudes indexed as |flag, data>.
     For each y in 0..N-1:
-        P(y) = |<0,y|psi>|^2 + |<1,y|psi>|^2
+        P(y) = \sum_e |<e,y|psi>|^2
         phase(y) = <1,y|psi> / <0,y|psi>  (when both are non-zero)
 
     Args:
@@ -49,13 +52,13 @@ def extract_fourier_info(
     data = statevector.data
 
     dim_data = 1 << n
+    num_flag_states = max(1, len(data) // dim_data)
     for y in range(N):
-        amp_0y = data[0 * dim_data + y]
-        amp_1y = data[1 * dim_data + y]
-
-        prob_y = float(abs(amp_0y) ** 2 + abs(amp_1y) ** 2)
+        prob_y = float(sum(abs(data[e * dim_data + y]) ** 2 for e in range(num_flag_states)))
         distribution[y] = prob_y
 
+        amp_0y = data[0 * dim_data + y]
+        amp_1y = data[1 * dim_data + y] if num_flag_states > 1 else 0j
         if prob_y > 1e-12 and abs(amp_0y) > 1e-12:
             phase = amp_1y / amp_0y
             phases[y] = complex(phase)
@@ -111,17 +114,17 @@ class QFTEngine:
     def __init__(self, backend: str = "statevector") -> None:
         self.backend = backend
 
-    def transform(self, dcp_state: DCPState) -> QFTResult:
-        """Apply QFT to the data register of a DCP state and extract information.
+    def transform(self, dcp_state: DCPState | EDCPState) -> QFTResult:
+        """Apply QFT to the data register of a DCP or EDCP state and extract information.
 
         Args:
-            dcp_state: Prepared DCPState.
+            dcp_state: Prepared DCPState or EDCPState.
 
         Returns:
             QFTResult with transformed statevector, distribution, and phases.
         """
         N = dcp_state.N
-        n = dcp_state.n_qubits - 1
+        n = max(1, (N - 1).bit_length())
         data_qubits = list(range(n))
 
         # Build full circuit: DCP state preparation + QFT on data register
