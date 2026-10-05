@@ -1,8 +1,8 @@
 # Project Context & Phase Implementation Log
 
 > **Project:** DCP/EDCP Quantum Information Analysis Framework  
-> **Last Updated:** 2026-10-01  
-> **Current Status:** Phase 6 Complete — All phases implemented including EDCP and Modulus-Halving.
+> **Last Updated:** 2026-10-05
+> **Current Status:** Phases 1–6 complete; UI Phase V1–V3 implemented; optional V4 panels remain future work.
 
 ## Environment
 
@@ -185,3 +185,27 @@ The core research question — *how does Fourier information truncation affect s
   - `results/figures/dcp_heatmaps/`
   - `results/figures/dcp_scaling/`
   - `results/figures/edcp_comparison/dcp_vs_edcp_N*.png`
+
+---
+
+## UI Phase V Implementation Log
+
+The interactive Streamlit/Plotly visualizer roadmap is tracked in
+[`ui_implementation.md`](./ui_implementation.md).
+
+- **V1 — Engine instrumentation:** implemented `TraceEvent` and
+  `Orchestrator.run_traced()` with state, QFT, measurement, posterior, and
+  verdict events. Traced and untraced runs share the same execution pipeline.
+- **V2 — Single-trial visualizer:** implemented the statevector, QFT phase,
+  measurement/truncation, posterior, and verdict panels with step/replay and
+  optional auto-play controls.
+- **V3 — Validation dashboard:** implemented charts from the archived
+  truncation/sample-complexity results, a selected-configuration golden check,
+  and an on-demand noise sweep; all 71 project tests pass.
+- **V4 — Advanced panels:** optional future work; EDCP-specific visualization,
+  modulus-halving animation, and story-mode presets are not implemented yet.
+
+The sampler's joint Hadamard-basis measurement convention and its
+noise-before-truncation order are documented in the UI log and shown directly
+in the app. Install the optional UI dependencies with `pip install -e ".[ui]"`;
+launch with `python -m streamlit run app.py`.

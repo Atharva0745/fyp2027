@@ -145,6 +145,92 @@ def plot_recovery_vs_truncation(
     return save_path
 
 
+def plot_recovery_vs_samples(
+    df: pd.DataFrame,
+    output_dir: str | Path,
+) -> Path:
+    """Plot exact secret-recovery probability against independent sample count.
+
+    Accepts either raw trial data with a ``correct`` column or an aggregated
+    table with ``p_success``/``recovery_prob`` values.
+    """
+    required = {"N", "k", "m"}
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(
+            "Sample-complexity data must include columns: "
+            + ", ".join(sorted(missing))
+        )
+    if df.empty:
+        raise ValueError("Sample-complexity data must contain at least one row")
+
+    if "correct" in df.columns:
+        grouped = df.groupby(["N", "k", "m"], as_index=False).agg(
+            p_success=("correct", "mean"),
+            successes=("correct", "sum"),
+            trials=("correct", "count"),
+        )
+        intervals = grouped.apply(
+            lambda row: wilson_score_interval(
+                int(row["successes"]),
+                int(row["trials"]),
+            ),
+            axis=1,
+            result_type="expand",
+        )
+        grouped["ci_lower"] = intervals[0]
+        grouped["ci_upper"] = intervals[1]
+    else:
+        grouped = df.copy()
+        if "p_success" not in grouped.columns:
+            if "recovery_prob" in grouped.columns:
+                grouped["p_success"] = grouped["recovery_prob"]
+            else:
+                raise ValueError(
+                    "Aggregated sample-complexity data must include "
+                    "'p_success' or 'recovery_prob'"
+                )
+
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    save_path = out_dir / "recovery_vs_samples.png"
+
+    moduli = sorted(grouped["N"].unique())
+    fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+    for modulus_index, modulus in enumerate(moduli):
+        modulus_rows = grouped[grouped["N"] == modulus]
+        color = PALETTE[modulus_index % len(PALETTE)]
+        for k in sorted(modulus_rows["k"].unique()):
+            series = modulus_rows[modulus_rows["k"] == k].sort_values("m")
+            label = f"N={modulus}, k={k}"
+            ax.plot(
+                series["m"],
+                series["p_success"],
+                marker="o",
+                linewidth=2,
+                color=color,
+                linestyle="-" if k == min(modulus_rows["k"]) else "--",
+                label=label,
+            )
+            if {"ci_lower", "ci_upper"}.issubset(series.columns):
+                ax.fill_between(
+                    series["m"],
+                    series["ci_lower"],
+                    series["ci_upper"],
+                    color=color,
+                    alpha=0.12,
+                )
+
+    ax.set_xlabel("Independent samples ($m$)")
+    ax.set_ylabel("Exact recovery probability $P(\\hat{s}=s)$")
+    ax.set_title("Secret Recovery vs. Sample Complexity")
+    ax.set_ylim(-0.02, 1.02)
+    ax.legend(title="Modulus and retained bits", frameon=True, ncol=2, fontsize=9)
+    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return save_path
+
+
 def plot_mi_vs_truncation(
     output_dir: str | Path,
     moduli: Sequence[int] = (4, 8, 16, 32),
