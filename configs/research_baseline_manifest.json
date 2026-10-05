@@ -1,0 +1,43 @@
+{
+  "baseline_tag": "v1-dcp-baseline",
+  "baseline_commit": "372b98dea04f84139e270547b934a2d7d8cbb787",
+  "baseline_test_run": {
+    "command": ".venv/Scripts/python.exe -m pytest tests/ -q",
+    "result": "71 passed",
+    "runtime_seconds": 32.03
+  },
+  "reproduction": {
+    "lockfile": "uv.lock",
+    "sync_command": "uv sync --locked --extra dev --extra ui",
+    "test_command": "python -m pytest tests/ -q",
+    "clean_environment_verified": true,
+    "clean_environment_test_result": "130 passed",
+    "clean_environment_runtime_seconds": 15.96
+  },
+  "environment": {
+    "python": "3.12.13",
+    "os": "Windows 11, build 26200",
+    "qiskit": "2.5.2",
+    "qiskit_aer": "0.17.2",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "pandas": "3.0.6",
+    "pytest": "9.1.1",
+    "streamlit": "1.65.0",
+    "plotly": "7.1.0"
+  },
+  "experiment_config": "configs/dcp_base.yaml",
+  "experiment_parameters": {
+    "N": 16,
+    "secret": 5,
+    "samples_per_trial": 1,
+    "retained_bits": null,
+    "noise_epsilon": 0.0,
+    "shots": 1000,
+    "seed": 42,
+    "problem_type": "dcp",
+    "recovery_strategy": "brute_force",
+    "truncation_mode": "msb",
+    "backend": "statevector"
+  }
+}

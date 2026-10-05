@@ -11,7 +11,8 @@ single final recovery score. They cover the main verification concerns:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from numbers import Integral
+from typing import Any, Hashable, Sequence
 
 import numpy as np
 
@@ -21,14 +22,29 @@ class VerificationReport:
     """Container for intermediate-state diagnostics and lemma checks."""
 
     stage_metrics: dict[str, dict[str, Any]] = field(default_factory=dict)
-    set_a_count: int = 0
-    set_b_count: int = 0
+    set_a_count: int | None = None
+    set_b_count: int | None = None
     set_a_sizes: list[int] = field(default_factory=list)
     set_b_sizes: list[int] = field(default_factory=list)
-    lemma2_gap: float = 0.0
-    lemma3_max_amplitude: float = 0.0
-    lemma4_relative_gap: float = 0.0
-    distinguishability: float = 0.0
+    lemma2_gap: float | None = None
+    lemma3_max_amplitude: float | None = None
+    lemma4_relative_gap: float | None = None
+    distinguishability: float | None = None
+
+
+@dataclass(frozen=True)
+class IndependenceTestResult:
+    """Empirical dependence metrics for paired ``(h_star, B)`` observations."""
+
+    outcome_values: tuple[Hashable, ...]
+    probabilities_b_given_h0: tuple[float, ...]
+    probabilities_b_given_h1: tuple[float, ...]
+    count_h0: int
+    count_h1: int
+    probability_h1: float
+    total_variation: float
+    kl_divergence_h0_to_h1: float
+    mutual_information_bits: float
 
 
 def compute_set_ab_statistics(labels: Sequence[int]) -> dict[str, Any]:
@@ -99,6 +115,123 @@ def compute_distinguishability(probabilities_a: Sequence[float], probabilities_b
     return float(0.5 * np.sum(np.abs(a - b)))
 
 
+def _normalize_probability_distribution(probabilities: Sequence[float]) -> np.ndarray:
+    distribution = np.asarray(probabilities, dtype=float)
+    if distribution.ndim != 1 or distribution.size == 0:
+        raise ValueError("Probability distribution must be a non-empty vector")
+    if not np.all(np.isfinite(distribution)) or np.any(distribution < 0):
+        raise ValueError("Probabilities must be finite and non-negative")
+    total = float(np.sum(distribution))
+    if total <= 0:
+        raise ValueError("Probability distribution must have positive mass")
+    return distribution / total
+
+
+def compute_kl_divergence(
+    probabilities_p: Sequence[float],
+    probabilities_q: Sequence[float],
+) -> float:
+    """Compute ``D_KL(P || Q)`` in bits from explicit probability vectors."""
+    p = _normalize_probability_distribution(probabilities_p)
+    q = _normalize_probability_distribution(probabilities_q)
+    if p.shape != q.shape:
+        raise ValueError("Probability vectors must have the same shape for KL divergence")
+
+    positive_p = p > 0
+    if np.any(q[positive_p] == 0):
+        return float("inf")
+    return float(np.sum(p[positive_p] * np.log2(p[positive_p] / q[positive_p])))
+
+
+def compute_mutual_information_from_conditionals(
+    probabilities_b_given_h0: Sequence[float],
+    probabilities_b_given_h1: Sequence[float],
+    probability_h1: float = 0.5,
+) -> float:
+    """Compute ``I(H; B)`` in bits from ``P(B|H=0)`` and ``P(B|H=1)``."""
+    if not np.isfinite(probability_h1) or not 0.0 <= probability_h1 <= 1.0:
+        raise ValueError("probability_h1 must be between 0 and 1")
+
+    p_b_h0 = _normalize_probability_distribution(probabilities_b_given_h0)
+    p_b_h1 = _normalize_probability_distribution(probabilities_b_given_h1)
+    if p_b_h0.shape != p_b_h1.shape:
+        raise ValueError("Conditional probability vectors must have the same shape")
+
+    p_h1 = float(probability_h1)
+    marginal_b = (1.0 - p_h1) * p_b_h0 + p_h1 * p_b_h1
+    mutual_information = 0.0
+    for p_h, conditional in ((1.0 - p_h1, p_b_h0), (p_h1, p_b_h1)):
+        if p_h == 0.0:
+            continue
+        positive = conditional > 0
+        mutual_information += p_h * float(
+            np.sum(conditional[positive] * np.log2(conditional[positive] / marginal_b[positive]))
+        )
+    return max(0.0, mutual_information)
+
+
+def analyze_conditional_independence(
+    h_star_values: Sequence[int],
+    b_outcomes: Sequence[Hashable],
+) -> IndependenceTestResult:
+    """Estimate ``P(B|h*=0/1)`` and compare the conditional distributions.
+
+    Inputs must be paired outcomes from repeated trials. This function does not
+    generate the attack's ``h*`` or B outcomes; it analyzes supplied data.
+    """
+    if len(h_star_values) != len(b_outcomes):
+        raise ValueError("h_star_values and b_outcomes must have equal lengths")
+    if not h_star_values:
+        raise ValueError("at least one paired observation is required")
+
+    paired_values: list[tuple[int, Hashable]] = []
+    for h_star, b_outcome in zip(h_star_values, b_outcomes):
+        if not isinstance(h_star, Integral) or h_star not in (0, 1):
+            raise ValueError("h_star_values must contain only 0 or 1")
+        try:
+            hash(b_outcome)
+        except TypeError as error:
+            raise ValueError("each B outcome must be a hashable category") from error
+        paired_values.append((int(h_star), b_outcome))
+
+    count_h0 = sum(h_star == 0 for h_star, _ in paired_values)
+    count_h1 = len(paired_values) - count_h0
+    if count_h0 == 0 or count_h1 == 0:
+        raise ValueError("observations must include both h*=0 and h*=1")
+
+    outcome_values = tuple(
+        sorted({outcome for _, outcome in paired_values}, key=repr)
+    )
+    outcome_index = {outcome: index for index, outcome in enumerate(outcome_values)}
+    counts_h0 = np.zeros(len(outcome_values), dtype=float)
+    counts_h1 = np.zeros(len(outcome_values), dtype=float)
+    for h_star, outcome in paired_values:
+        target = counts_h1 if h_star else counts_h0
+        target[outcome_index[outcome]] += 1.0
+
+    probabilities_h0 = counts_h0 / count_h0
+    probabilities_h1 = counts_h1 / count_h1
+    probability_h1 = count_h1 / len(paired_values)
+    conditional_h0 = tuple(float(value) for value in probabilities_h0)
+    conditional_h1 = tuple(float(value) for value in probabilities_h1)
+
+    return IndependenceTestResult(
+        outcome_values=outcome_values,
+        probabilities_b_given_h0=conditional_h0,
+        probabilities_b_given_h1=conditional_h1,
+        count_h0=count_h0,
+        count_h1=count_h1,
+        probability_h1=float(probability_h1),
+        total_variation=compute_distinguishability(conditional_h0, conditional_h1),
+        kl_divergence_h0_to_h1=compute_kl_divergence(conditional_h0, conditional_h1),
+        mutual_information_bits=compute_mutual_information_from_conditionals(
+            conditional_h0,
+            conditional_h1,
+            probability_h1=probability_h1,
+        ),
+    )
+
+
 def build_verification_report(
     *,
     qft_distribution: Sequence[float] | None = None,
@@ -129,20 +262,35 @@ def build_verification_report(
         }
         stage_metrics["labels"] = label_summary
 
-    set_stats = compute_set_ab_statistics(labels or [])
-    lemma2_gap = evaluate_lemma_2(branch_h0 or [], branch_h1 or [])
-    lemma3_bound = evaluate_lemma_3(amplitudes_h0 or [])
-    if amplitudes_h1 is not None:
-        lemma3_bound = max(lemma3_bound, evaluate_lemma_3(amplitudes_h1))
-    lemma4_gap = evaluate_lemma_4(amplitudes_h0 or [], amplitudes_h1 or [])
-    distinguishability = compute_distinguishability(prob_a or [], prob_b or []) if prob_a is not None and prob_b is not None else 0.0
+    set_stats = compute_set_ab_statistics(labels) if labels is not None else None
+    lemma2_gap = (
+        evaluate_lemma_2(branch_h0, branch_h1)
+        if branch_h0 is not None and branch_h1 is not None
+        else None
+    )
+    amplitude_sets = [values for values in (amplitudes_h0, amplitudes_h1) if values is not None]
+    lemma3_bound = (
+        max(evaluate_lemma_3(values) for values in amplitude_sets)
+        if amplitude_sets
+        else None
+    )
+    lemma4_gap = (
+        evaluate_lemma_4(amplitudes_h0, amplitudes_h1)
+        if amplitudes_h0 is not None and amplitudes_h1 is not None
+        else None
+    )
+    distinguishability = (
+        compute_distinguishability(prob_a, prob_b)
+        if prob_a is not None and prob_b is not None
+        else None
+    )
 
     return VerificationReport(
         stage_metrics=stage_metrics,
-        set_a_count=set_stats["set_a_count"],
-        set_b_count=set_stats["set_b_count"],
-        set_a_sizes=set_stats["set_a_sizes"],
-        set_b_sizes=set_stats["set_b_sizes"],
+        set_a_count=set_stats["set_a_count"] if set_stats is not None else None,
+        set_b_count=set_stats["set_b_count"] if set_stats is not None else None,
+        set_a_sizes=set_stats["set_a_sizes"] if set_stats is not None else [],
+        set_b_sizes=set_stats["set_b_sizes"] if set_stats is not None else [],
         lemma2_gap=lemma2_gap,
         lemma3_max_amplitude=lemma3_bound,
         lemma4_relative_gap=lemma4_gap,

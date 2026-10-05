@@ -7,7 +7,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 from src.circuits.qft_circuit import apply_qft_to_register
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
     from src.engines.edcp_engine import EDCPState
 from src.engines.dcp_engine import DCPState
@@ -22,6 +22,12 @@ class QFTResult:
     fourier_distribution: dict[int, float]  # y -> P(y)
     phases: dict[int, complex]              # y -> relative phase factor
     N: int
+
+
+class FourierSample(TypedDict):
+    y: int
+    phase: complex
+    probability: float
 
 
 def extract_fourier_info(
@@ -151,3 +157,36 @@ class QFTEngine:
     ) -> bool:
         """Verify extracted phases match theoretical expectation exp(2π i s y / N)."""
         return verify_phases(phases=phases, s=s, N=N, tol=tol)
+
+
+def fourier_sample(
+    dcp_state: DCPState,
+    rng: np.random.Generator | None = None,
+) -> FourierSample:
+    """Sample a Fourier label and return its phase and Born probability.
+
+    Supplying a seeded NumPy generator makes the selected label reproducible.
+    The returned relative phase is statevector-derived metadata, not an
+    independently observable phase measurement.
+    """
+    active_rng = rng if rng is not None else np.random.default_rng()
+    result = QFTEngine().transform(dcp_state)
+    labels = np.asarray(list(result.fourier_distribution), dtype=int)
+    probabilities = np.asarray(
+        [result.fourier_distribution[int(label)] for label in labels],
+        dtype=float,
+    )
+    total_probability = float(probabilities.sum())
+    if not np.isfinite(total_probability) or total_probability <= 0.0:
+        raise ValueError("Fourier distribution must have finite positive probability mass")
+    probabilities /= total_probability
+
+    y = int(active_rng.choice(labels, p=probabilities))
+    if y not in result.phases:
+        raise ValueError(f"Relative phase is unavailable for sampled Fourier label y={y}")
+
+    return {
+        "y": y,
+        "phase": result.phases[y],
+        "probability": float(result.fourier_distribution[y]),
+    }

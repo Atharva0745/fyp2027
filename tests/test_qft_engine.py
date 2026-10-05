@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 from src.engines.dcp_engine import DCPEngine
-from src.engines.qft_engine import QFTEngine, extract_fourier_info, verify_phases
+from src.engines.qft_engine import QFTEngine, extract_fourier_info, fourier_sample, verify_phases
 
 
 @pytest.mark.parametrize("N", [4, 8, 16, 32])
@@ -52,3 +52,24 @@ def test_qft_phase_verification_failure():
     # Verifying with wrong secret s=4 should fail
     with pytest.raises(AssertionError, match="Phase mismatch"):
         qft_engine.verify_phases(qft_res.phases, s=4, N=16, tol=1e-8)
+
+
+def test_fourier_sample_returns_valid_label_phase_and_probability():
+    state = DCPEngine().create_state(N=16, s=5, x=7)
+
+    sample = fourier_sample(state, rng=np.random.default_rng(123))
+
+    assert 0 <= sample["y"] < 16
+    assert np.isclose(sample["probability"], 1.0 / 16)
+    assert np.isclose(
+        sample["phase"], np.exp(2j * np.pi * 5 * sample["y"] / 16)
+    )
+
+
+def test_fourier_sample_is_reproducible_with_seeded_rng():
+    state = DCPEngine().create_state(N=16, s=5, x=7)
+
+    first = fourier_sample(state, rng=np.random.default_rng(42))
+    second = fourier_sample(state, rng=np.random.default_rng(42))
+
+    assert first == second
