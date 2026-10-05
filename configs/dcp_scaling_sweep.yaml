@@ -1,0 +1,38 @@
+# Phase 5.2 — Modulus Scaling Sweep Configuration
+# Runs N=4..64 at full information (k=n) with m=1 to measure scaling behaviour
+experiment:
+  name: "dcp_scaling"
+  description: "Phase 5.2 scaling sweep: runtime and circuit depth vs. N at full information (k=n)"
+
+base_parameters:
+  m: 1
+  epsilon: 0.0
+  shots: 200
+  seed: 42
+  problem_type: "dcp"
+  recovery_strategy: "bayesian"
+  truncation_mode: "msb"
+  backend: "statevector"
+
+# k=null means k=n (full information) - parsed by run_sweep.py
+sweep_grid:
+  - N: 4
+    s: 3
+    k_values: [2]
+  - N: 8
+    s: 5
+    k_values: [3]
+  - N: 16
+    s: 11
+    k_values: [4]
+  - N: 32
+    s: 19
+    k_values: [5]
+  - N: 64
+    s: 37
+    k_values: [6]
+
+output:
+  dir: "results/raw/dcp_scaling"
+  file_prefix: "dcp_scaling_sweep"
+  format: "parquet"
