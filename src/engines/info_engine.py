@@ -20,6 +20,9 @@ class InformationResult:
     bit_flips: list[int]
     truncation_mode: str
     b: int = 0  # Flag qubit measurement outcome in Hadamard/X basis
+    flag_bit_flipped: bool = False
+    Y_noisy: int | None = None
+    b_sampled: int | None = None
 
 
 class InformationEngine:
@@ -83,9 +86,11 @@ class InformationEngine:
 
         # Step 2: Inject noise if epsilon > 0
         flipped: list[int] = []
+        flag_bit_flipped = False
         if noise_level > 0.0:
             y_noisy, flipped = inject_noise(y_full, n, noise_level, rng=active_rng)
             b_noisy = 1 - b_sampled if active_rng.random() < noise_level else b_sampled
+            flag_bit_flipped = b_noisy != b_sampled
             noise_applied = len(flipped) > 0 or (b_noisy != b_sampled)
         else:
             y_noisy = y_full
@@ -104,4 +109,7 @@ class InformationEngine:
             bit_flips=flipped,
             truncation_mode=truncation_mode,
             b=b_noisy,
+            flag_bit_flipped=flag_bit_flipped,
+            Y_noisy=y_noisy,
+            b_sampled=b_sampled,
         )

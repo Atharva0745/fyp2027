@@ -24,6 +24,10 @@ dev = [
     "seaborn>=0.13",
     "pyarrow>=14.0",
 ]
+ui = [
+    "streamlit>=1.49",
+    "plotly>=5.24",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -34,4 +38,3 @@ extraPaths = ["."]
 
 [tool.pyrefly]
 search-path = ["."]
-

@@ -7,7 +7,7 @@ from datetime import datetime
 import itertools
 from pathlib import Path
 import time
-from typing import Any
+from typing import Any, Generator
 import numpy as np
 import pandas as pd
 
@@ -16,6 +16,7 @@ from src.engines.dcp_engine import DCPEngine, DCPState
 from src.engines.info_engine import InformationEngine, InformationResult
 from src.engines.qft_engine import QFTEngine, QFTResult
 from src.engines.recovery_engine import RecoveryEngine, RecoveryResult
+from src.recovery.bayesian import bayesian_recovery
 from src.utils.math_utils import wilson_score_interval
 from src.utils.serialization import save_experiment_result
 from src.verification import VerificationReport, build_verification_report
@@ -57,6 +58,16 @@ class ExperimentResult:
     timestamp: str = ""
 
 
+@dataclass(frozen=True)
+class TraceEvent:
+    """One observable stage in a traced experiment run."""
+
+    stage: str
+    trial: int
+    sample: int | None
+    payload: dict[str, Any]
+
+
 class Orchestrator:
     """Top-level experiment runner orchestrating the entire quantum pipeline."""
 
@@ -65,6 +76,36 @@ class Orchestrator:
         self.qft_engine = QFTEngine()
 
     def run(self, config: ExperimentConfig) -> ExperimentResult:
+        """Run an experiment without collecting intermediate trace events."""
+        events = self._run_events(config, offset_override=None, trace_enabled=False)
+        while True:
+            try:
+                next(events)
+            except StopIteration as completed:
+                return completed.value
+
+    def run_traced(
+        self,
+        config: ExperimentConfig,
+        offset_override: int | None = None,
+    ) -> Generator[TraceEvent, None, ExperimentResult]:
+        """Run an experiment while yielding its state, QFT, sample, and inference steps.
+
+        An optional offset override fixes the first sample's random offset without
+        changing the random stream used to sample measurement outcomes.
+        """
+        return self._run_events(
+            config,
+            offset_override=offset_override,
+            trace_enabled=True,
+        )
+
+    def _run_events(
+        self,
+        config: ExperimentConfig,
+        offset_override: int | None,
+        trace_enabled: bool,
+    ) -> Generator[TraceEvent, None, ExperimentResult]:
         """Run an end-to-end experiment according to the configuration.
 
         Args:
@@ -74,6 +115,10 @@ class Orchestrator:
             ExperimentResult containing trial data and summary statistics.
         """
         validate_config(config)
+        if offset_override is not None and not (0 <= offset_override < config.N):
+            raise ValueError(
+                f"offset_override must be in [0, {config.N}), got {offset_override}"
+            )
 
         start_time = time.perf_counter()
         rng = np.random.default_rng(config.seed)
@@ -106,15 +151,59 @@ class Orchestrator:
         for trial_idx in range(shots):
             # For m samples, generate independent offsets x_i
             offsets = [int(rng.integers(0, N)) for _ in range(m)]
+            if trial_idx == 0 and offset_override is not None:
+                offsets[0] = offset_override
             obs_list: list[InformationResult] = []
 
-            for x_i in offsets:
+            for sample_idx, x_i in enumerate(offsets):
                 if is_edcp and edcp_engine is not None and chi is not None:
                     state = edcp_engine.create_state(N=N, s=s, x=x_i, chi=chi)
                 else:
                     state = self.dcp_engine.create_state(N=N, s=s, x=x_i)
-                    
+
+                if trace_enabled and trial_idx == 0 and sample_idx == 0:
+                    state_data = state.statevector.data
+                    data_dimension = 1 << n
+                    amplitudes = [
+                        {
+                            "basis": (
+                                f"|{basis_index // data_dimension}>"
+                                f"|{basis_index % data_dimension}>"
+                            ),
+                            "magnitude": float(abs(amplitude)),
+                            "probability": float(abs(amplitude) ** 2),
+                        }
+                        for basis_index, amplitude in enumerate(state_data)
+                        if abs(amplitude) > 1e-10
+                    ]
+                    yield TraceEvent(
+                        stage="state",
+                        trial=trial_idx,
+                        sample=sample_idx,
+                        payload={
+                            "N": N,
+                            "s": s,
+                            "x": x_i,
+                            "target": (x_i + s) % N,
+                            "amplitudes": amplitudes,
+                            "circuit_depth": state.circuit.depth(),
+                            "circuit_text": str(state.circuit.draw(output="text")),
+                        },
+                    )
+
                 qft_res = self.qft_engine.transform(state)
+                if trace_enabled and trial_idx == 0 and sample_idx == 0:
+                    yield TraceEvent(
+                        stage="qft",
+                        trial=trial_idx,
+                        sample=sample_idx,
+                        payload={
+                            "N": N,
+                            "distribution": qft_res.fourier_distribution.copy(),
+                            "phases": qft_res.phases.copy(),
+                        },
+                    )
+
                 info_res = info_engine.process(
                     qft_result=qft_res,
                     k=config.k,
@@ -123,6 +212,47 @@ class Orchestrator:
                     rng=rng,
                 )
                 obs_list.append(info_res)
+
+                if trace_enabled:
+                    yield TraceEvent(
+                        stage="sample",
+                        trial=trial_idx,
+                        sample=sample_idx,
+                        payload={
+                            "x": x_i,
+                            "Y_full": info_res.Y_full,
+                            "Y_noisy": info_res.Y_noisy,
+                            "Y_truncated": info_res.Y_truncated,
+                            "b": info_res.b,
+                            "b_sampled": info_res.b_sampled,
+                            "bit_flips": info_res.bit_flips.copy(),
+                            "flag_bit_flipped": info_res.flag_bit_flipped,
+                            "k": info_res.k,
+                            "n": info_res.n,
+                            "truncation_mode": info_res.truncation_mode,
+                        },
+                    )
+                    _, posterior, confidence = bayesian_recovery(
+                        observations=[
+                            (observation.Y_truncated, observation.b)
+                            for observation in obs_list
+                        ],
+                        k=config.k,
+                        n=n,
+                        N=N,
+                        mode=config.truncation_mode,
+                        rng=np.random.default_rng(0),
+                    )
+                    yield TraceEvent(
+                        stage="posterior",
+                        trial=trial_idx,
+                        sample=sample_idx,
+                        payload={
+                            "posterior": posterior,
+                            "confidence": float(confidence),
+                            "samples_seen": sample_idx + 1,
+                        },
+                    )
 
                 if trial_idx == 0:
                     last_dcp_state = state
@@ -222,7 +352,7 @@ class Orchestrator:
             prob_b=[float(1.0 - rec_prob)] if rec_prob < 1.0 else [0.0, 1.0],
         )
 
-        return ExperimentResult(
+        result = ExperimentResult(
             config=config,
             dcp_state=last_dcp_state,
             qft_result=last_qft_res,
@@ -232,6 +362,25 @@ class Orchestrator:
             verification=verification_report,
             timestamp=datetime.now().isoformat(),
         )
+        if trace_enabled:
+            assert last_rec_res is not None
+            yield TraceEvent(
+                stage="verdict",
+                trial=0,
+                sample=None,
+                payload={
+                    "s_hat": last_rec_res.s_hat,
+                    "s_true": last_rec_res.s_true,
+                    "correct": last_rec_res.correct,
+                    "mirror_correct": last_rec_res.mirror_correct,
+                    "confidence": last_rec_res.confidence,
+                    "bit_correct": last_rec_res.bit_correct,
+                    "posterior": last_rec_res.posterior,
+                    "recovery_prob": rec_prob,
+                    "mirror_recovery_prob": mirror_prob,
+                },
+            )
+        return result
 
     def run_sweep(
         self,
