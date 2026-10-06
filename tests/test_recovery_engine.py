@@ -6,7 +6,12 @@ import pytest
 from src.engines.dcp_engine import DCPEngine
 from src.engines.info_engine import InformationEngine
 from src.engines.qft_engine import QFTEngine
-from src.engines.recovery_engine import RecoveryEngine, RecoveryResult
+from src.engines.recovery_engine import (
+    RecoveryEngine,
+    RecoveryResult,
+    recover_secret,
+    recover_secret_bit,
+)
 from src.recovery.bayesian import bayesian_recovery
 from src.recovery.bitwise import bitwise_recovery, compute_bit_probabilities
 from src.recovery.brute_force import brute_force_recovery, compute_likelihood
@@ -99,3 +104,50 @@ def test_recovery_truncated_vs_full_multisample():
     assert full_correct > trunc_correct
     # Truncated recovery on N=8 should be low (~ random baseline)
     assert (trunc_correct / shots) <= 0.25
+
+
+def test_dcp_secret_bit_and_full_recovery_from_seeded_measurements():
+    N = 8
+    true_secret = 3
+    qft_result = QFTEngine().transform(
+        DCPEngine().create_state(N=N, s=true_secret, x=0)
+    )
+    information_engine = InformationEngine(rng=np.random.default_rng(31))
+    samples = [
+        (observation.Y_full, observation.b)
+        for observation in (
+            information_engine.process(qft_result, k=3) for _ in range(256)
+        )
+    ]
+
+    bit_result = recover_secret_bit(
+        samples,
+        N,
+        bit_index=0,
+        true_secret=true_secret,
+        rng=np.random.default_rng(9),
+    )
+    full_result = recover_secret(
+        samples,
+        N,
+        true_secret=true_secret,
+        rng=np.random.default_rng(9),
+    )
+
+    assert bit_result["bit_hat"] == 1
+    assert bit_result["correct"] is True
+    assert bit_result["confidence"] == 1.0
+    assert full_result["d_hat"] in (true_secret, N - true_secret)
+    assert full_result["correct"] is True
+    assert full_result["mirror_correct"] is True
+    assert full_result["iterations"] == len(samples)
+    assert np.isclose(full_result["confidence"], 0.5)
+
+
+@pytest.mark.parametrize(
+    ("samples", "N", "bit_index"),
+    [([], 8, 0), ([(8, 0)], 8, 0), ([(1, 2)], 8, 0), ([(1, 0)], 8, 3)],
+)
+def test_dcp_recovery_helpers_reject_invalid_inputs(samples, N, bit_index):
+    with pytest.raises(ValueError):
+        recover_secret_bit(samples, N, bit_index)

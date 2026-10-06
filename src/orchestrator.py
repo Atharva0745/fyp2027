@@ -331,25 +331,8 @@ class Orchestrator:
             raw_data=raw_df,
         )
 
-        label_values = []
-        if last_info_res is not None:
-            label_values = [
-                int(last_info_res.Y_truncated),
-            ]
-        if trials:
-            label_values = [
-                int(trial["s_hat"]) if "s_hat" in trial else 0 for trial in trials
-            ]
-
         verification_report = build_verification_report(
             qft_distribution=list(last_qft_res.fourier_distribution.values()) if last_qft_res is not None else None,
-            labels=label_values,
-            amplitudes_h0=[complex(v) for v in (last_qft_res.phases.values() if last_qft_res is not None else [])],
-            amplitudes_h1=[complex(v) for v in (last_qft_res.phases.values() if last_qft_res is not None else [])],
-            branch_h0=[float(x) for x in (last_qft_res.fourier_distribution.values() if last_qft_res is not None else [])],
-            branch_h1=[float(x) for x in (last_qft_res.fourier_distribution.values() if last_qft_res is not None else [])],
-            prob_a=[float(rec_prob)],
-            prob_b=[float(1.0 - rec_prob)] if rec_prob < 1.0 else [0.0, 1.0],
         )
 
         result = ExperimentResult(

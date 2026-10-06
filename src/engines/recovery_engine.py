@@ -3,16 +3,134 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Sequence
+from numbers import Integral
+from typing import Mapping, Sequence, TypedDict
 import numpy as np
 
 from src.engines.info_engine import InformationResult
 from src.recovery.bayesian import bayesian_recovery
-from src.recovery.bitwise import bitwise_recovery
+from src.recovery.bitwise import bitwise_recovery, compute_bit_probabilities
 from src.recovery.brute_force import brute_force_recovery
 from src.recovery.maximum_likelihood import maximum_likelihood_recovery
 from src.recovery.phase_matching import phase_matching_recovery
 from src.utils.math_utils import bit_accuracy, bits_to_int
+
+
+class SecretBitRecoveryResult(TypedDict):
+    bit_index: int
+    bit_hat: int
+    probability_one: float
+    confidence: float
+    correct: bool | None
+    samples_used: int
+
+
+class DCPSecretRecoveryResult(TypedDict):
+    d_hat: int
+    correct: bool | None
+    mirror_correct: bool | None
+    confidence: float
+    iterations: int
+    posterior: dict[int, float]
+
+
+def _validated_dcp_samples(
+    samples: Sequence[tuple[int, int]],
+    N: int,
+) -> list[tuple[int, int]]:
+    if N < 2:
+        raise ValueError("N must be at least 2")
+    if not samples:
+        raise ValueError("at least one (y, b) sample is required")
+
+    validated: list[tuple[int, int]] = []
+    for sample in samples:
+        if len(sample) != 2:
+            raise ValueError("each sample must be a (y, b) pair")
+        y_value, flag_bit = sample
+        if not isinstance(y_value, Integral) or not 0 <= y_value < N:
+            raise ValueError(f"Fourier label y must be in [0, {N})")
+        if not isinstance(flag_bit, Integral) or flag_bit not in (0, 1):
+            raise ValueError("sample bit b must be 0 or 1")
+        validated.append((int(y_value), int(flag_bit)))
+    return validated
+
+
+def recover_secret_bit(
+    samples: Sequence[tuple[int, int]],
+    N: int,
+    bit_index: int,
+    true_secret: int | None = None,
+    rng: np.random.Generator | None = None,
+) -> SecretBitRecoveryResult:
+    """Infer one secret bit by marginalizing the existing DCP posterior.
+
+    This is Bayesian DCP inference and is not Simon's paper-specific
+    recursive bit-recovery procedure.
+    """
+    validated_samples = _validated_dcp_samples(samples, N)
+    n = max(1, (N - 1).bit_length())
+    if not isinstance(bit_index, Integral) or not 0 <= bit_index < n:
+        raise ValueError(f"bit_index must be in [0, {n})")
+    if true_secret is not None and not 0 <= true_secret < N:
+        raise ValueError(f"true_secret must be in [0, {N})")
+
+    _, posterior, _ = bayesian_recovery(
+        observations=validated_samples,
+        k=n,
+        n=n,
+        N=N,
+        rng=rng,
+    )
+    probability_one = compute_bit_probabilities(posterior, n)[int(bit_index)]
+    bit_hat = int(probability_one > 0.5)
+    true_bit = ((true_secret >> int(bit_index)) & 1) if true_secret is not None else None
+    return SecretBitRecoveryResult(
+        bit_index=int(bit_index),
+        bit_hat=bit_hat,
+        probability_one=probability_one,
+        confidence=max(probability_one, 1.0 - probability_one),
+        correct=(bit_hat == true_bit) if true_bit is not None else None,
+        samples_used=len(validated_samples),
+    )
+
+
+def recover_secret(
+    samples: Sequence[tuple[int, int]],
+    N: int,
+    true_secret: int | None = None,
+    rng: np.random.Generator | None = None,
+) -> DCPSecretRecoveryResult:
+    """Return the MAP DCP secret estimate and posterior diagnostics.
+
+    ``iterations`` is the number of sequential sample updates. DCP's
+    sign/mirror ambiguity is surfaced explicitly; this is not Simon-specific
+    recursive recovery.
+    """
+    validated_samples = _validated_dcp_samples(samples, N)
+    if true_secret is not None and not 0 <= true_secret < N:
+        raise ValueError(f"true_secret must be in [0, {N})")
+    n = max(1, (N - 1).bit_length())
+    d_hat, posterior, confidence = bayesian_recovery(
+        observations=validated_samples,
+        k=n,
+        n=n,
+        N=N,
+        rng=rng,
+    )
+    mirror_secret = (N - true_secret) % N if true_secret is not None else None
+    return DCPSecretRecoveryResult(
+        d_hat=d_hat,
+        correct=(d_hat == true_secret) if true_secret is not None else None,
+        mirror_correct=(
+            d_hat == true_secret or d_hat == mirror_secret
+            if true_secret is not None
+            else None
+        ),
+        confidence=float(confidence),
+        iterations=len(validated_samples),
+        posterior=posterior,
+    )
 
 
 @dataclass

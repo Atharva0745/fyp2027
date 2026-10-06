@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
+from typing import TypedDict
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
@@ -19,6 +21,13 @@ class DCPState:
     s: int
     x: int
     n_qubits: int
+
+
+class DCPSample(TypedDict):
+    state: DCPState
+    x: int
+    secret: int
+    faulty: bool
 
 
 def verify_dcp_state(
@@ -125,3 +134,36 @@ class DCPEngine:
             n=state.n_qubits - 1,
             tol=tol,
         )
+
+
+def generate_dcp_sample(
+    N: int,
+    d: int,
+    x: int,
+    faulty_probability: float = 0.0,
+) -> DCPSample:
+    """Prepare an ideal DCP sample and return its public metadata.
+
+    Faulty samples are not generated because the target fault semantics have
+    not been specified. A non-zero fault probability is therefore rejected.
+    """
+    if N < 2:
+        raise ValueError(f"Modulus N must be >= 2, got {N}")
+    if not 0 <= d < N:
+        raise ValueError(f"Secret d must be in [0, {N}), got {d}")
+    if not 0 <= x < N:
+        raise ValueError(f"Offset x must be in [0, {N}), got {x}")
+    if not isfinite(faulty_probability) or not 0.0 <= faulty_probability <= 1.0:
+        raise ValueError("faulty_probability must be finite and between 0 and 1")
+    if faulty_probability != 0.0:
+        raise NotImplementedError(
+            "Faulty-sample behavior is undefined; only ideal DCP samples are supported"
+        )
+
+    state = DCPEngine().create_state(N=N, s=d, x=x)
+    return {
+        "state": state,
+        "x": x,
+        "secret": d,
+        "faulty": False,
+    }

@@ -30,6 +30,12 @@ def test_orchestrator_single_run():
     assert len(result.statistics.bit_recovery_probs) == 2
     assert result.statistics.circuit_depth > 0
     assert result.statistics.num_qubits == 3
+    assert result.verification is not None
+    assert result.verification.distinguishability is None
+    assert result.verification.lemma2_gap is None
+    assert result.verification.lemma4_relative_gap is None
+    assert result.verification.set_a_count is None
+    assert result.verification.set_b_count is None
 
     # Check raw dataframe columns
     df = result.statistics.raw_data
